@@ -91,6 +91,7 @@ public class XmlValidationModeDetector {
 		// Peek into the file to look for DOCTYPE.
 		BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
 		try {
+			//step1 是否是DTD验证模式
 			boolean isDtdValidated = false;
 			String content;
 			while ((content = reader.readLine()) != null) {
@@ -98,15 +99,19 @@ public class XmlValidationModeDetector {
 				if (this.inComment || !StringUtils.hasText(content)) {
 					continue;
 				}
+
+				//step2 是否是DOCTYPE内容
 				if (hasDoctype(content)) {
 					isDtdValidated = true;
 					break;
 				}
+
 				if (hasOpeningTag(content)) {
 					// End of meaningful data...
 					break;
 				}
 			}
+			//step3 返回验证模式
 			return (isDtdValidated ? VALIDATION_DTD : VALIDATION_XSD);
 		}
 		catch (CharConversionException ex) {

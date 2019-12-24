@@ -69,11 +69,15 @@ public class DefaultDocumentLoader implements DocumentLoader {
 	public Document loadDocument(InputSource inputSource, EntityResolver entityResolver,
 			ErrorHandler errorHandler, int validationMode, boolean namespaceAware) throws Exception {
 
+		//step1 创建document解析工厂
 		DocumentBuilderFactory factory = createDocumentBuilderFactory(validationMode, namespaceAware);
 		if (logger.isDebugEnabled()) {
 			logger.debug("Using JAXP provider [" + factory.getClass().getName() + "]");
 		}
+		//step2 创建解析器
 		DocumentBuilder builder = createDocumentBuilder(factory, entityResolver, errorHandler);
+
+		//step3 解析document
 		return builder.parse(inputSource);
 	}
 
@@ -88,14 +92,22 @@ public class DefaultDocumentLoader implements DocumentLoader {
 	protected DocumentBuilderFactory createDocumentBuilderFactory(int validationMode, boolean namespaceAware)
 			throws ParserConfigurationException {
 
+		//step1 创建工厂实例
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+		//step2 设置命名空间支持
 		factory.setNamespaceAware(namespaceAware);
 
+
 		if (validationMode != XmlValidationModeDetector.VALIDATION_NONE) {
+			//开启验证
 			factory.setValidating(true);
+
+			//判断是否xsd文件验证
 			if (validationMode == XmlValidationModeDetector.VALIDATION_XSD) {
 				// Enforce namespace aware for XSD...
+				//xsd强制开始命名空间支持（为什么要强制开启命名空间支持，是否和xsd的特性有关）
 				factory.setNamespaceAware(true);
+
 				try {
 					factory.setAttribute(SCHEMA_LANGUAGE_ATTRIBUTE, XSD_SCHEMA_LANGUAGE);
 				}
@@ -128,10 +140,14 @@ public class DefaultDocumentLoader implements DocumentLoader {
 			@Nullable EntityResolver entityResolver, @Nullable ErrorHandler errorHandler)
 			throws ParserConfigurationException {
 
+		//step1 创建DocumentBuilder对象
 		DocumentBuilder docBuilder = factory.newDocumentBuilder();
+
+		//step2 设置entityResolver
 		if (entityResolver != null) {
 			docBuilder.setEntityResolver(entityResolver);
 		}
+		//step3 设置 errorHandler
 		if (errorHandler != null) {
 			docBuilder.setErrorHandler(errorHandler);
 		}
