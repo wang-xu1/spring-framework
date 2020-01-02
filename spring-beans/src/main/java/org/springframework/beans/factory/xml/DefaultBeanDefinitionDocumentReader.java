@@ -184,7 +184,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 		if (delegate.isDefaultNamespace(root)) {
 			//step2 遍历子节点
 			NodeList nl = root.getChildNodes();
-			for (int i = 0; i < nl.getLength(); i++) {
+ 			for (int i = 0; i < nl.getLength(); i++) {
 				Node node = nl.item(i);
 				if (node instanceof Element) {
 					Element ele = (Element) node;
@@ -359,10 +359,16 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 	 * and registering it with the registry.
 	 */
 	protected void processBeanDefinition(Element ele, BeanDefinitionParserDelegate delegate) {
+
+		//step1 进行beanDefinitions解析
 		BeanDefinitionHolder bdHolder = delegate.parseBeanDefinitionElement(ele);
+
 		if (bdHolder != null) {
+			//step2 进行自定义解析
 			bdHolder = delegate.decorateBeanDefinitionIfRequired(ele, bdHolder);
 			try {
+
+				//step3 注册实例
 				// Register the final decorated instance.
 				BeanDefinitionReaderUtils.registerBeanDefinition(bdHolder, getReaderContext().getRegistry());
 			}
@@ -370,6 +376,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 				getReaderContext().error("Failed to register bean definition with name '" +
 						bdHolder.getBeanName() + "'", ele, ex);
 			}
+			//step4  通知相关服务bean注册完成
 			// Send registration event.
 			getReaderContext().fireComponentRegistered(new BeanComponentDefinition(bdHolder));
 		}
