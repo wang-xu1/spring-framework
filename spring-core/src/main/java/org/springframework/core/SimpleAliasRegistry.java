@@ -49,32 +49,44 @@ public class SimpleAliasRegistry implements AliasRegistry {
 
 	@Override
 	public void registerAlias(String name, String alias) {
+
+		//step1 校验 name 和alias
 		Assert.hasText(name, "'name' must not be empty");
 		Assert.hasText(alias, "'alias' must not be empty");
+		// this.aliasMap 全局变量
 		synchronized (this.aliasMap) {
+			//step2 如果alias 等于 name 从aliasMap中删除alias映射
 			if (alias.equals(name)) {
 				this.aliasMap.remove(alias);
 				if (logger.isDebugEnabled()) {
 					logger.debug("Alias definition '" + alias + "' ignored since it points to same name");
 				}
 			}
+			//step3 如不相等则建立映射
 			else {
+				//setp3.1 获取注册的bean名称
 				String registeredName = this.aliasMap.get(alias);
 				if (registeredName != null) {
+					//step3.2 如 registeredName equals name 直接return
 					if (registeredName.equals(name)) {
 						// An existing alias - no need to re-register
 						return;
 					}
+					//step3.3 不是覆盖 直接抛出异常
 					if (!allowAliasOverriding()) {
 						throw new IllegalStateException("Cannot define alias '" + alias + "' for name '" +
 								name + "': It is already registered for name '" + registeredName + "'.");
 					}
+					//debug 日志
 					if (logger.isDebugEnabled()) {
 						logger.debug("Overriding alias '" + alias + "' definition for registered name '" +
 								registeredName + "' with new target name '" + name + "'");
 					}
 				}
+				//step3.4 检查循环依赖
 				checkForAliasCircle(name, alias);
+
+				//step3.5 注册bean和alias映射
 				this.aliasMap.put(alias, name);
 				if (logger.isTraceEnabled()) {
 					logger.trace("Alias definition '" + alias + "' registered for name '" + name + "'");
