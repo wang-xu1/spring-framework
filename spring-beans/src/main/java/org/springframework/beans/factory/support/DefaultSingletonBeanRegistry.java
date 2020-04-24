@@ -174,10 +174,15 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 */
 	@Nullable
 	protected Object getSingleton(String beanName, boolean allowEarlyReference) {
+		//step1 从缓存中获取bean
 		Object singletonObject = this.singletonObjects.get(beanName);
+		//step2  缓存中的 bean 为空，且当前 bean 正在创建
 		if (singletonObject == null && isSingletonCurrentlyInCreation(beanName)) {
+			//step3 锁定资源
 			synchronized (this.singletonObjects) {
+				//step4 从二级缓存earlySingletonObjects中获取
 				singletonObject = this.earlySingletonObjects.get(beanName);
+				//step5 二级缓存中获取不到，并且允许提前暴露 ，
 				if (singletonObject == null && allowEarlyReference) {
 					ObjectFactory<?> singletonFactory = this.singletonFactories.get(beanName);
 					if (singletonFactory != null) {
@@ -212,6 +217,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 				if (logger.isDebugEnabled()) {
 					logger.debug("Creating shared instance of singleton bean '" + beanName + "'");
 				}
+				//前置处理
 				beforeSingletonCreation(beanName);
 				boolean newSingleton = false;
 				boolean recordSuppressedExceptions = (this.suppressedExceptions == null);
@@ -242,8 +248,10 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 					if (recordSuppressedExceptions) {
 						this.suppressedExceptions = null;
 					}
+					//后置处理
 					afterSingletonCreation(beanName);
 				}
+				//放入缓存
 				if (newSingleton) {
 					addSingleton(beanName, singletonObject);
 				}
