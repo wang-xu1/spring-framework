@@ -260,10 +260,14 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			bean = getObjectForBeanInstance(sharedInstance, name, beanName, null);
 		}
 
-		//step3 共享bean
+		/**
+		 * step3
+		 * 该 bean 的 scope 不是 singleton
+		 * 该 bean 的 scope 是 singleton ,但是没有初始化完成
+		 */
 		else {
 
-			//step3.1 循环依赖直接抛异常
+			//step3.1  若当前 bean 在创建，则抛出 BeanCurrentlyInCreationException 异常。
 			// Fail if we're already creating this bean instance:
 			// We're assumably within a circular reference.
 			if (isPrototypeCurrentlyInCreation(beanName)) {
@@ -273,14 +277,20 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			//step3.2 如果容器不存在直接从父类容器中获取
 			// Check if bean definition exists in this factory.
 			BeanFactory parentBeanFactory = getParentBeanFactory();
+
+			// parentBeanFactory 不为空且 beanDefinitionMap 中不存该 name 的 BeanDefinition
 			if (parentBeanFactory != null && !containsBeanDefinition(beanName)) {
 				// Not found -> check parent.
+				// 确定原始 beanName
 				String nameToLookup = originalBeanName(name);
+
+				// 若为 AbstractBeanFactory 类型，委托父类处理
 				if (parentBeanFactory instanceof AbstractBeanFactory) {
 					return ((AbstractBeanFactory) parentBeanFactory).doGetBean(
 							nameToLookup, requiredType, args, typeCheckOnly);
 				}
 				else if (args != null) {
+					// 委托给构造函数 getBean() 处理
 					// Delegation to parent with explicit args.
 					return (T) parentBeanFactory.getBean(nameToLookup, args);
 				}
@@ -289,6 +299,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					return parentBeanFactory.getBean(nameToLookup, requiredType);
 				}
 				else {
+					// 没有 args，委托给标准的 getBean() 处理
 					return (T) parentBeanFactory.getBean(nameToLookup);
 				}
 			}
@@ -309,16 +320,20 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 				//step7 处理依赖 bean
 				// Guarantee initialization of beans that the current bean depends on.
+				//在初始化 bean 时解析 depends-on 标签时设置
 				String[] dependsOn = mbd.getDependsOn();
 				if (dependsOn != null) {
 					for (String dep : dependsOn) {
+
+						// 检验依赖的bean 是否已经注册给当前 bean 获取其他传递依赖bean
 						if (isDependent(beanName, dep)) {
 							throw new BeanCreationException(mbd.getResourceDescription(), beanName,
 									"Circular depends-on relationship between '" + beanName + "' and '" + dep + "'");
 						}
-						//step7.1 注册依赖bean
+						//step7.1 注册依赖bean dependentBeanMap ,dependenciesForBeanMap
 						registerDependentBean(dep, beanName);
 						try {
+							// 调用 getBean 初始化依赖bean
 							getBean(dep);
 						}
 						catch (NoSuchBeanDefinitionException ex) {
@@ -331,6 +346,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 				//step8 bean 实例化
 				// Create bean instance.
+				// 单例模式初始化
 				if (mbd.isSingleton()) {
 					sharedInstance = getSingleton(beanName, () -> {
 						try {
@@ -351,17 +367,23 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					// It's a prototype -> create a new instance.
 					Object prototypeInstance = null;
 					try {
+						// 记录加载原型模式 bean 之前的加载状态，即前置处理。
 						beforePrototypeCreation(beanName);
+						// 创建bean实例对象
 						prototypeInstance = createBean(beanName, mbd, args);
 					}
 					finally {
+						// 进行加载原型模式 bean 后的后置处理。
 						afterPrototypeCreation(beanName);
 					}
+					// 从 bean 实例中获取对象。
 					bean = getObjectForBeanInstance(prototypeInstance, name, beanName, mbd);
 				}
 				//step10 指定模式
 				else {
 					String scopeName = mbd.getScope();
+
+					// 获取作用域 request,session，global-session
 					final Scope scope = this.scopes.get(scopeName);
 					if (scope == null) {
 						throw new IllegalStateException("No Scope registered for scope name '" + scopeName + "'");
