@@ -6,7 +6,7 @@
 
     <context:annotation-config/>
 
-   <bean id="myBean1" class="MyBean1">
+   <bean id="myBean1" class="MyBean1" >
        <!--<constructor-arg ref="myBean"/>-->
        <property name="myBean" ref="myBean"/>
    </bean>
